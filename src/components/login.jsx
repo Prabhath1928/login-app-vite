@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "./Login.css";
 import { FaGoogle, FaFacebookF, FaTwitter } from "react-icons/fa";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -13,11 +12,10 @@ function Login() {
 
   const navigate = useNavigate();
 
-  // ✅ If already logged in, redirect to Home
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      navigate("/home", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [navigate]);
 
@@ -41,9 +39,7 @@ function Login() {
           password: password.trim(),
         },
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
 
@@ -53,9 +49,8 @@ function Login() {
         localStorage.setItem("token", data.token);
         setSuccess("Login successful! Redirecting...");
 
-        // ✅ Replace login page in history
         setTimeout(() => {
-          navigate("/home", { replace: true });
+          navigate("/dashboard", { replace: true });
         }, 1000);
       }
     } catch (err) {
@@ -70,57 +65,87 @@ function Login() {
   };
 
   return (
-    <div className="desktop-login">
-      {/* Left Branding Section */}
-      <div className="login-left">
-        <h1>Welcome Back 👋</h1>
-        <p>Login to continue to your dashboard and manage your account easily.</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center px-6
+                    bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
 
-      {/* Right Login Section */}
-      <div className="login-right">
-        <div className="login-form">
-          <h2>Login</h2>
+      <div className="max-w-6xl w-full rounded-3xl shadow-2xl overflow-hidden 
+                      grid grid-cols-1 md:grid-cols-2 bg-white/10 backdrop-blur-xl">
 
-          <form onSubmit={handleSubmit}>
-            <div className="input-group">
-              <label>Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-              />
+        <div className="hidden md:flex flex-col justify-center px-14 
+                        bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 
+                        text-white">
+
+          <h1 className="text-4xl font-bold mb-4">Welcome Back 👋</h1>
+
+          <p className="text-lg opacity-90">
+            Login to continue to your dashboard and manage your account easily.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center bg-white/90">
+
+          <div className="p-10 rounded-2xl shadow-xl w-full max-w-md">
+
+            <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              <div>
+                <label className="block mb-1 font-medium">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter username"
+                  className="w-full border border-gray-300 p-2 rounded 
+                             focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 font-medium">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full border border-gray-300 p-2 rounded 
+                             focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {success && <p className="text-green-500 text-sm">{success}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-indigo-600 text-white py-2 rounded 
+                           hover:bg-indigo-700 transition disabled:opacity-50"
+              >
+                {loading ? "Logging in..." : "Login"}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="mb-3 text-gray-500">Or login with</p>
+
+              <div className="flex justify-center space-x-4">
+                <button className="p-3 border rounded-full hover:bg-gray-200">
+                  <FaGoogle />
+                </button>
+                <button className="p-3 border rounded-full hover:bg-gray-200">
+                  <FaFacebookF />
+                </button>
+                <button className="p-3 border rounded-full hover:bg-gray-200">
+                  <FaTwitter />
+                </button>
+              </div>
             </div>
 
-            <div className="input-group">
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-              />
-            </div>
-
-            {error && <p className="error">{error}</p>}
-            {success && <p className="success">{success}</p>}
-
-            <button type="submit" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          {/* Social Login */}
-          <div className="social-login">
-            <p>Or login with</p>
-            <div className="social-icons">
-              <button type="button"><FaGoogle /></button>
-              <button type="button"><FaFacebookF /></button>
-              <button type="button"><FaTwitter /></button>
-            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
