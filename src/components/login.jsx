@@ -63,7 +63,7 @@ function Login() {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen flex items-center justify-center px-6
                     bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
@@ -121,7 +121,7 @@ function Login() {
                 type="submit"
                 disabled={loading}
                 className="w-full bg-indigo-600 text-white py-2 rounded 
-                           hover:bg-indigo-700 transition disabled:opacity-50"
+                           hover:bg-indigo-700 transition disabled:opacity-50 cursor-pointer"
               >
                 {loading ? "Logging in..." : "Login"}
               </button>
@@ -131,13 +131,13 @@ function Login() {
               <p className="mb-3 text-gray-500">Or login with</p>
 
               <div className="flex justify-center space-x-4">
-                <button className="p-3 border rounded-full hover:bg-gray-200">
+                <button className="p-3 border rounded-full hover:bg-gray-200 cursor-pointer">
                   <FaGoogle />
                 </button>
-                <button className="p-3 border rounded-full hover:bg-gray-200">
+                <button className="p-3 border rounded-full hover:bg-gray-200 cursor-pointer">
                   <FaFacebookF />
                 </button>
-                <button className="p-3 border rounded-full hover:bg-gray-200">
+                <button className="p-3 border rounded-full hover:bg-gray-200 cursor-pointer">
                   <FaTwitter />
                 </button>
               </div>
