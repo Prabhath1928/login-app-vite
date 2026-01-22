@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
 
 function Products() {
   const navigate = useNavigate();
@@ -10,17 +11,21 @@ function Products() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-  const [showViewPopup, setShowViewPopup] = useState(false);
-  const [showEditPopup, setShowEditPopup] = useState(false);
+  const [showEditPopup, setShowEditPopup] = useState(false);    
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
+  const { id } = useParams();   // dynamic product id from URL
+
 
   const [editProduct, setEditProduct] = useState({
-    id: "",
-    title: "",
-    price: "",
-    description: "",
-  });
+  id: "",
+  title: "",
+  price: "",
+  description: "",
+  category: "",
+  image: "",
+  rating: { rate: "", count: "" }
+});
 
 const [newProduct, setNewProduct] = useState({
   title: "",
@@ -32,52 +37,63 @@ const [newProduct, setNewProduct] = useState({
 });
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) navigate("/", { replace: true });
+  const token = localStorage.getItem("token");
+  if (!token) navigate("/", { replace: true });
 
-    fetch("https://fakestoreapi.com/products")
-      .then(res => res.json())
-      .then(data => {
-       setProducts(data); 
+  axios.get("https://fakestoreapi.com/products")
+    .then(response => {
+      setProducts(response.data);
       setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [navigate]);
-
-  const handleViewProduct = (product) => {
-    setSelectedProduct(product);
-    setShowViewPopup(true);
-    setShowEditPopup(false);
-  };
-
-  const handleEditClick = () => {
-    setEditProduct({
-      id: selectedProduct.id,
-      title: selectedProduct.title,
-      price: selectedProduct.price,
-      description: selectedProduct.description,
+    })
+    .catch(error => {
+      console.error("Error fetching products:", error);
+      setLoading(false);
     });
-    setShowEditPopup(true);
-  };
+
+}, [navigate]);
 
   const handleEditChange = (e) => {
-    setEditProduct({ ...editProduct, [e.target.name]: e.target.value });
+  const { name, value } = e.target;
+
+  if (name === "rate" || name === "count") {
+    setEditProduct({
+      ...editProduct,
+      rating: { ...editProduct.rating, [name]: value }
+    });
+  } else {
+    setEditProduct({ ...editProduct, [name]: value });
+  }
+};
+
+const handleUpdateProduct = () => {
+ 
+  const updatedProduct = {
+    ...selectedProduct,
+    ...editProduct,
+    price: Number(editProduct.price)
   };
 
-  const handleUpdateProduct = () => {
-    const updated = products.map(p =>
-      p.id === editProduct.id ? { ...p, ...editProduct } : p
+  axios.put(`https://fakestoreapi.com/products/${editProduct.id}`, {
+    title: updatedProduct.title,
+    price: updatedProduct.price,
+    description: updatedProduct.description,
+    image: updatedProduct.image,
+    category: updatedProduct.category
+  })
+  .then(() => {
+
+    const updatedList = products.map(p =>
+      p.id === updatedProduct.id ? updatedProduct : p
     );
-    setProducts(updated);
-    setSelectedProduct({ ...selectedProduct, ...editProduct });
-    setShowEditPopup(false);
-  };
 
-  const handleDeleteProduct = () => {
-    setProducts(products.filter(p => p.id !== selectedProduct.id));
-    setShowDeletePopup(false);
-    setShowViewPopup(false);
-  };
+    setProducts(updatedList);
+    setSelectedProduct(updatedProduct);
+    setShowEditPopup(false);   
+  })
+  .catch(error => {
+    console.error("Error updating product:", error);
+  });
+};
 
   const handleConfirmLogout = () => {
     localStorage.removeItem("token");
@@ -97,31 +113,284 @@ const handleAddChange = (e) => {
 };
 
 const handleAddProduct = () => {
-  const newItem = {
-    ...newProduct,
-    id: Date.now(),
-  };
+  axios.post("https://fakestoreapi.com/products", {
+    title: newProduct.title,
+    price: Number(newProduct.price),
+    description: newProduct.description,
+    image: newProduct.image,
+    category: newProduct.category
+  })
+  .then(response => {
+    const addedProduct = response.data;
 
-  setProducts([newItem, ...products]);
-  setShowAddDrawer(false);
+    // Add API response product to UI list
+    setProducts([addedProduct, ...products]);
 
-  setNewProduct({
-    title: "",
-    price: "",
-    description: "",
-    category: "",
-    image: "",
-    rating: { rate: "", count: "" }
+    setShowAddDrawer(false);
+
+    // Reset form
+    setNewProduct({
+      title: "",
+      price: "",
+      description: "",
+      category: "",
+      image: "",
+      rating: { rate: "", count: "" }
+    });
+  })
+  .catch(error => {
+    console.error("Error adding product:", error);
   });
 };
 
+const handleDeleteProduct = () => {
+  if (!id) return;
+
+  axios.delete(`https://fakestoreapi.com/products/${id}`)
+    .then(() => {
+      setProducts(products.filter(p => p.id !== Number(id)));
+      setShowDeletePopup(false);
+      navigate("/products");
+    })
+    .catch(err => {
+      console.error("Delete error:", err);
+    });
+};
+
+
+useEffect(() => {
+  if (id) {
+    axios.get(`https://fakestoreapi.com/products/${id}`)
+      .then(response => {
+        setSelectedProduct(response.data);
+
+        setEditProduct({
+          id: response.data.id,
+          title: response.data.title,
+          price: response.data.price,
+          description: response.data.description,
+          category: response.data.category,
+          image: response.data.image,
+          rating: response.data.rating || { rate: "", count: "" }
+        });
+      })
+      .catch(error => {
+        console.error("Error fetching single product:", error);
+      });
+  }
+}, [id]);
+
+if (id && selectedProduct) {
+  return (
+    <div className="h-screen w-screen overflow-hidden bg-white flex flex-row relative">
+      
+      {/* Back Button */}
+      <div className="absolute top-8 left-8 z-20">
+        <button
+          onClick={() => navigate("/products")}
+          className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md cursor-pointer"
+        >
+          ← Back to Products
+        </button>
+      </div>
+
+      {/* Left Side: Image Centered Vertically and Horizontally */}
+      <div className="w-1/2 h-full bg-gradient-to-br from-indigo-50 to-sky-100 flex items-center justify-center p-12">
+        <img 
+          src={selectedProduct.image} 
+          alt={selectedProduct.title}
+          className="max-h-[80%] max-w-full object-contain" 
+        />
+      </div>
+
+      {/* Right Side: Full Height Details */}
+      <div className="w-1/2 h-full px-12 py-10 flex flex-col justify-between bg-white border-l border-slate-100">
+        {!showEditPopup ? (
+          <>
+            {/* Top Section */}
+            <div className="overflow-y-auto pr-2">
+              <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-wider rounded-full select-none">
+                {selectedProduct.category}
+              </span>
+
+              <h2 className="text-3xl font-bold mt-4 mb-3 text-slate-900 leading-tight select-none">
+                {selectedProduct.title}
+              </h2>
+
+              <p className="text-slate-600 mb-6 text-base leading-relaxed select-none">
+                {selectedProduct.description}
+              </p>
+
+              <div className="flex flex-col gap-4 select-none">
+                <p className="text-3xl font-bold text-indigo-700">
+                  ₹ {selectedProduct.price}
+                </p>
+                
+                <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                  <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-lg">
+                    <span className="text-base">★</span>
+                    <span>{selectedProduct.rating?.rate || "0.0"}</span>
+                  </div>
+                  <span className="text-slate-300">|</span>
+                  <div className="bg-slate-50 px-3 py-1 rounded-lg">
+                    <span>{selectedProduct.rating?.count || "0"} in stock</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Section */}
+            <div className="flex gap-4 mt-6 pt-6 border-t border-slate-50">
+              <button
+                onClick={() => setShowEditPopup(true)}
+                className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg cursor-pointer"
+              >
+                Edit Product
+              </button>
+
+              <button
+                onClick={() => setShowDeletePopup(true)}
+                className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition shadow-lg cursor-pointer"
+              >
+                Delete Product
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col h-full justify-between overflow-hidden">
+            {/* Top Section: Edit Form */}
+            <div className="overflow-y-auto pr-2 custom-scrollbar">
+              <h3 className="text-2xl font-bold mb-6 text-slate-900">Edit Product</h3>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 ml-1">Title</label>
+                  <input
+                    name="title"
+                    value={editProduct.title}
+                    onChange={handleEditChange}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500 ml-1">Price</label>
+                    <input
+                      name="price"
+                      type="number"
+                      value={editProduct.price}
+                      onChange={handleEditChange}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500 ml-1">Category</label>
+                    <input
+                      name="category"
+                      value={editProduct.category}
+                      onChange={handleEditChange}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 ml-1">Image URL</label>
+                  <input
+                    name="image"
+                    value={editProduct.image}
+                    onChange={handleEditChange}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 ml-1">Description</label>
+                  <textarea
+                    name="description"
+                    rows="3"
+                    value={editProduct.description}
+                    onChange={handleEditChange}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500 ml-1">Rating</label>
+                    <input
+                      name="rate"
+                      value={editProduct.rating?.rate}
+                      onChange={handleEditChange}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500 ml-1">Stock</label>
+                    <input
+                      name="count"
+                      value={editProduct.rating?.count}
+                      onChange={handleEditChange}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Section: Edit Actions */}
+            <div className="flex gap-4 mt-6 pt-6 border-t border-slate-50">
+              <button
+                onClick={handleUpdateProduct}
+                className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg cursor-pointer"
+              >
+                Save Changes
+              </button>
+
+              <button
+                onClick={() => setShowEditPopup(false)}
+                className="flex-1 py-3.5 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Popup */}
+      {showDeletePopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">Delete Product?</h3>
+            <p className="text-slate-600 mb-8">Are you sure you want to delete "{selectedProduct.title}"? This action cannot be undone.</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowDeletePopup(false)}
+                className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-sky-200 to-blue-100 no-scrollbar overflow-y-scroll">
 
       <Navbar 
        onLogout={() => setShowLogoutPopup(true)} 
-      isPopupOpen={showViewPopup || showEditPopup || showDeletePopup || showLogoutPopup}
       />
 
 
@@ -181,11 +450,11 @@ const handleAddProduct = () => {
 
                   <div className="mt-auto pt-4 border-t flex items-center justify-between">
                     <span className="text-lg font-bold text-indigo-700">
-                      ₹{Math.round(product.price * 80)}
+                      ₹{product.price}
                     </span>
 
                     <button
-                      onClick={() => handleViewProduct(product)}
+                      onClick={() => navigate(`/products/${product.id}`)}
                       className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium
                                  hover:bg-indigo-700 transition shadow-md cursor-pointer"
                     >
@@ -199,150 +468,6 @@ const handleAddProduct = () => {
         )}
       </main>
 
-      {/* View / Edit Modal */}
-      {showViewPopup && selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
-
-          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full  max-h-[70vh] overflow-hidden flex flex-col md:flex-row">
-
-            {/* Left */}
-            <div className="md:w-5/12 bg-gradient-to-br from-indigo-50 to-sky-100 p-10 flex items-center justify-center">
-              <img
-                src={selectedProduct.image}
-                alt={selectedProduct.title}
-                className="max-h-80 object-contain"
-              />
-            </div>
-
-            {/* Right */}
-            <div className="md:w-7/12 p-10 overflow-y-auto">
-
-              <div className="flex justify-between items-center mb-6">
-                <span className="px-4 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
-                  {selectedProduct.category}
-                </span>
-                <button
-                  onClick={() => { setShowViewPopup(false); setShowEditPopup(false); }}
-                  className="text-4xl text-slate-400 hover:text-red-500 font-bold cursor-pointer"
-                >
-                  &times;
-                </button>
-              </div>
-
-              {!showEditPopup ? (
-                <>
-                  <h2 className="text-2xl font-bold text-slate-800 mb-4">
-                    {selectedProduct.title}
-                  </h2>
-
-                  <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                    {selectedProduct.description}
-                  </p>
-
-                  <div className="space-y-2 text-sm mb-6">
-                    <p><b>Rating:</b> {selectedProduct.rating?.rate} ⭐</p>
-                    <p><b>Count:</b> {selectedProduct.rating?.count}</p>
-                  </div>
-
-                  <p className="text-2xl font-bold text-indigo-700 mb-8">
-                    ₹ {Math.round(selectedProduct.price * 80)}
-                  </p>
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleEditClick}
-                      className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium cursor-pointer"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => setShowDeletePopup(true)}
-                      className="flex-1 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 font-medium cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-xl font-bold mb-6">Edit Product</h3>
-
-                  <input
-                    type="text"
-                    name="title"
-                    value={editProduct.title}
-                    onChange={handleEditChange}
-                    className="w-full border rounded-lg px-4 py-2 mb-4"
-                  />
-
-                  <input
-                    type="number"
-                    name="price"
-                    value={editProduct.price}
-                    onChange={handleEditChange}
-                    className="w-full border rounded-lg px-4 py-2 mb-4"
-                  />
-
-                  <textarea
-                    name="description"
-                    rows="4"
-                    value={editProduct.description}
-                    onChange={handleEditChange}
-                    className="w-full border rounded-lg px-4 py-2 mb-6"
-                  />
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleUpdateProduct}
-                      className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 cursor-pointer"
-                    >
-                      Save
-                    </button>
-
-                    <button
-                      onClick={() => setShowEditPopup(false)}
-                      className="flex-1 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Popup */}
-      {showDeletePopup && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-96 text-center animate-in zoom-in duration-300">
-            <h3 className="text-xl font-semibold mb-3 text-slate-800">
-              Delete Product?
-            </h3>
-            <p className="text-slate-500 mb-6">
-              This product will be permanently removed.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={handleDeleteProduct}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition cursor-pointer"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setShowDeletePopup(false)}
-                className="flex-1 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 font-medium transition cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showLogoutPopup && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
           <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-8 rounded-2xl shadow-2xl w-96 text-center border border-white/30">
@@ -355,13 +480,13 @@ const handleAddProduct = () => {
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => setShowLogoutPopup(false)}
-                className="px-6 py-2 rounded-lg bg-white/20 text-white font-semibold border border-white/40 hover:bg-white/30 transition"
+                className="px-6 py-2 rounded-lg bg-white/20 text-white font-semibold border border-white/40 hover:bg-white/30 transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmLogout}
-                className="px-6 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition shadow-lg"
+                className="px-6 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition shadow-lg cursor-pointer"
               >
                 Logout
               </button>
@@ -382,7 +507,7 @@ const handleAddProduct = () => {
 >
 
       <div className="sticky top-0 bg-white z-10 border-b px-8 py-5 flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-indigo-700 tracking-tight">
+        <h2 className="text-2xl font-bold text-indigo-700 tracking-tight cursor-pointer">
           Add New Product
         </h2>
 
