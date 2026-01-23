@@ -182,8 +182,7 @@ useEffect(() => {
 
 if (id && selectedProduct) {
   return (
-    <div className="h-screen w-screen overflow-hidden bg-white flex flex-row relative">
-      
+    <div className="min-h-screen w-full bg-white flex flex-col lg:flex-row relative">
       {/* Back Button */}
       <div className="absolute top-8 left-8 z-20">
         <button
@@ -195,7 +194,7 @@ if (id && selectedProduct) {
       </div>
 
       {/* Left Side: Image Centered Vertically and Horizontally */}
-      <div className="w-1/2 h-full bg-gradient-to-br from-indigo-50 to-sky-100 flex items-center justify-center p-12">
+      <div className="w-full lg:w-1/2 h-[280px] lg:h-full bg-gradient-to-br from-indigo-50 to-sky-100 flex items-center justify-center p-6 lg:p-12">
         <img 
           src={selectedProduct.image} 
           alt={selectedProduct.title}
@@ -204,7 +203,7 @@ if (id && selectedProduct) {
       </div>
 
       {/* Right Side: Full Height Details */}
-      <div className="w-1/2 h-full px-12 py-10 flex flex-col justify-between bg-white border-l border-slate-100">
+      <div className="w-full lg:w-1/2 px-6 py-6 lg:px-12 lg:py-10 flex flex-col justify-between bg-white lg:border-l border-slate-100">
         {!showEditPopup ? (
           <>
             {/* Top Section */}
@@ -240,7 +239,7 @@ if (id && selectedProduct) {
             </div>
 
             {/* Bottom Section */}
-            <div className="flex gap-4 mt-6 pt-6 border-t border-slate-50">
+            <div className="flex flex-col sm:flex-row gap-4 mt-6 pt-6 border-t border-slate-50">
               <button
                 onClick={() => setShowEditPopup(true)}
                 className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg cursor-pointer"
@@ -340,7 +339,7 @@ if (id && selectedProduct) {
             </div>
 
             {/* Bottom Section: Edit Actions */}
-            <div className="flex gap-4 mt-6 pt-6 border-t border-slate-50">
+            <div className="flex flex-col sm:flex-row gap-4 mt-6 pt-6 border-t border-slate-50">
               <button
                 onClick={handleUpdateProduct}
                 className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg cursor-pointer"
@@ -394,7 +393,7 @@ if (id && selectedProduct) {
       />
 
 
-     <header className="pt-32 pb-12 px-6">
+     <header className="pt-24 sm:pt-32 pb-10 px-4 sm:px-6">
   <div className="max-w-9xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
 
     <div>
@@ -418,7 +417,7 @@ if (id && selectedProduct) {
   </div>
 </header>
 
-      <main className="max-w-9xl mx-auto px-6 pb-20">
+      <main className="max-w-9xl mx-auto px-4 sm:px-6 pb-20">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 space-y-4">
             <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -431,7 +430,7 @@ if (id && selectedProduct) {
                 key={product.id}
                 className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col"
               >
-                <div className="h-64 bg-gradient-to-br from-indigo-50 to-sky-100 flex items-center justify-center p-8">
+                <div className="h-52 sm:h-64 bg-gradient-to-br from-indigo-50 to-sky-100 flex items-center justify-center p-6 sm:p-8">
                   <img
                     src={product.image}
                     alt={product.title}
